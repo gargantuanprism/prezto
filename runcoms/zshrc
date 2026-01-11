@@ -1,13 +1,214 @@
-#
-# Executes commands at the start of an interactive session.
-#
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
-#
+function mutagen-create {
+  name=$1
+  alpha=$2
+  beta=$3
 
-# Source Prezto.
+  mutagen sync create \
+    $alpha \
+    $beta \
+    -n $name \
+    -l $name \
+    -c $TU_DOCKER_BASE/mutagen.yml
+}
+
+function ssm-get {
+  aws ssm get-parameter --name "$1" | jq -r .Parameter.Value
+}
+
+function watch-lambda {
+  fn=$1
+  shift
+  saw watch --raw /aws/lambda/$fn "$@"
+}
+
+function watch-lambda-jq {
+  fn=$1
+  shift
+  saw watch /aws/lambda/$fn --raw "$@" \
+    | grep --line-buffered \
+      -vE '(RequestId|INIT_START|FIREBASE WARNING|^$)' \
+    | jq -R 'fromjson? | .'
+}
+
+function saw-jq {
+  saw get "$@" \
+    | grep --line-buffered \
+      -vE '(RequestId|INIT_START|FIREBASE WARNING|^$)' \
+    | jq -R 'fromjson? | .'
+}
+
+function get-lambda {
+  fn=$1
+  shift
+  saw get /aws/lambda/$fn "$@" \
+    | grep -vE '(RequestId|INIT_START)' \
+    | grep -vE '^$'
+}
+
+# same as get-lambda except ignore bad JSON
+function get-lambda-jq {
+  fn=$1
+  shift
+  saw get /aws/lambda/$fn "$@" \
+    | grep -vE '(RequestId|INIT_START)' \
+    | grep -vE '^$' \
+    | jq -R 'fromjson? | .'
+}
+
+function docker-shell {
+  docker exec -it $1 bash
+}
+
+function docker-tail {
+  while true; do 
+    docker logs -f $1
+    sleep 1
+  done
+}
+
+function docker-run-shell {
+  docker run --rm -it $1 /bin/bash
+}
+
+function docker-run {
+  docker run --rm --name $1 $1
+}
+
+function ecr-login {
+  local repo=$AWS_ECR_PRIVATE_REPO
+
+  if [ "$1" = "public" ]; then
+    local repo=$AWS_ECR_PUBLIC_REPO
+  fi
+
+  aws ecr get-login-password --region us-east-1 \
+    | docker login --username AWS --password-stdin $repo
+}
+
+function rsync-watch {
+  while true; do
+    fswatch -o $1 | rsync -avz $1 $2
+  done
+}
+
+function s3cat {
+  aws s3 cp "$1" -
+}
+
+function lambda-invoke {
+  aws lambda invoke \
+    --function-name $1 \
+    --payload $2 \
+    --cli-read-timeout 300 \
+    /tmp/out_$1
+}
+
+function napi-force-update {
+  https --session=napi --ignore-stdin patch $NAPI_PRD_URL/devices/$1 \
+    forceUpdate=$RANDOM
+}
+
+function napi-get-device {
+  https --session=napi $NAPI_PRD_URL/devices/$1
+}
+
+function napi-update-device {
+  local id=$1
+  shift
+  https --session=napi --ignore-stdin patch $NAPI_PRD_URL/devices/$id "$@"
+}
+
+function check-ssl {
+  openssl s_client -connect $1:443 2>/dev/null | openssl x509 -noout -dates
+}
+
+function chrome-screenshot {
+  chrome='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+  $chrome --disable-gpu --headless --screenshot $1
+}
+
+function unzip-to-dir {
+  local dir=`basename $1 .zip`
+  mkdir -p $dir
+  unzip $1 -d $dir
+}
+
+function pg-select {
+  psql $PG_PRD_URL -qAtc "$1"
+}
+
+function epoch-ms {
+  date -r $(expr $1 / 1000)
+}
+
+fpath=(~/.zsh/completion $fpath)
+
 if [[ -s "${ZDOTDIR:-$HOME}/.zprezto/init.zsh" ]]; then
   source "${ZDOTDIR:-$HOME}/.zprezto/init.zsh"
 fi
 
-# Customize to your needs...
+autoload -Uz promptinit
+promptinit
+prompt damoekri
+
+autoload -U +X bashcompinit && bashcompinit
+autoload -U +X compinit && compinit
+
+compdef -d go
+
+alias pbinclip='xclip -o | pastebincl | grep URL | cut -c 6- | xclip'
+alias mount-iso="sudo mount -o loop -t iso9660"
+alias tmux-copy="tmux show-buffer | pbcopy"
+alias tmux-start="tmuxinator start vim"
+alias ve-start='deactivate; source .venv/bin/activate'
+alias pgrep='pgrep -alfi'
+alias pkill='pkill -alfi'
+alias autossh='autossh -M 12345'
+alias napi="https --session=napi"
+alias napi-local='http --session=napi-local'
+alias brewup='brew upgrade --greedy && brew cleanup --prune=all'
+alias cd=z
+alias lgi=lazygit
+
+FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow'
+
+PATH="$HOME/bin:$PATH"  
+PATH="/usr/local/heroku/bin:$PATH"
+PATH="$HOME/.local/bin:$PATH"
+PATH="/opt/homebrew/bin:$PATH"
+PATH="/opt/local/bin:$PATH"
+PATH="$GEM_HOME/bin:$PATH"
+PATH="$HOME/go/bin:$PATH"
+PATH="$HOME/.cargo/bin:$PATH"
+
+source $TU_DOCKER_BASE/bin/tudockerctl-completion.bash
+source $HOME/bin/tu-misc.sh
+# source $HOME/dev/npm-dist/util.sh
+#source $HOME/bin/lambda-completion.bash
+
+ssh-add
+ssh-add $HOME/.ssh/aws.pem
+ssh-add $HOME/.ssh/m1
+ssh-add $HOME/.ssh/rpi
+ssh-add $HOME/.ssh/anova-github
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+nvm use 18
+
+# BASE16_SHELL=$HOME/.config/base16-shell/
+# [ -n "$PS1" ] && [ -s $BASE16_SHELL/profile_helper.sh ] && eval "$($BASE16_SHELL/profile_helper.sh)"
+
+. "$HOME/.atuin/bin/env"
+eval "$(atuin init zsh)"
+eval "$(zoxide init zsh)"
+
+export PATH="$HOME/.jenv/bin:$PATH"
+eval "$(jenv init -)"
+
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - zsh)"
+
