@@ -6,7 +6,7 @@ fi
 
 autoload -Uz promptinit
 promptinit
-prompt damoekri
+prompt skwp
 
 autoload -U +X bashcompinit && bashcompinit
 autoload -U +X compinit && compinit
@@ -22,6 +22,7 @@ PATH="/opt/local/bin:$PATH"
 PATH="$GEM_HOME/bin:$PATH"
 PATH="$HOME/go/bin:$PATH"
 PATH="$HOME/.cargo/bin:$PATH"
+PATH="/home/linuxbrew/.linuxbrew/bin:$PATH"
 
 source ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zalias
 source ${ZDOTDIR:-$HOME}/.zprezto/runcoms/zfunction
@@ -34,6 +35,7 @@ if [[ -f $HOME/bin/tu-misc.sh ]]; then
   source $HOME/bin/tu-misc.sh
 fi
 
+eval "$(ssh-agent)"
 ssh-add
 
 export NVM_DIR="$HOME/.nvm"
