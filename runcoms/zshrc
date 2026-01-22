@@ -169,6 +169,7 @@ alias napi-local='http --session=napi-local'
 alias brewup='brew upgrade --greedy && brew cleanup --prune=all'
 alias cd=z
 alias lgi=lazygit
+alias pg-quiet='psql -qAtc'
 
 FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow'
 
