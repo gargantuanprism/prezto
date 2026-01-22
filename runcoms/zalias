@@ -1,0 +1,18 @@
+alias pbinclip='xclip -o | pastebincl | grep URL | cut -c 6- | xclip'
+alias mount-iso="sudo mount -o loop -t iso9660"
+alias tmux-copy="tmux show-buffer | pbcopy"
+alias tmux-start="tmuxinator start vim"
+alias ve-start='deactivate; source .venv/bin/activate'
+alias pgrep='pgrep -alfi'
+alias pkill='pkill -alfi'
+alias autossh='autossh -M 12345'
+alias napi="https --session=napi"
+alias napi-local='http --session=napi-local'
+alias brewup='brew upgrade --greedy && brew cleanup --prune=all'
+alias cd=z
+alias lgi=lazygit
+alias wgu='sudo wg-quick up wg0'
+alias wgd='sudo wg-quick down wg0'
+alias wgr='sudo wg-quick down wg0; sudo wg-quick up wg0'
+alias dcl="docker-compose logs -f"
+
