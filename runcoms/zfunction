@@ -1,3 +1,5 @@
+# vim: ft=bash
+
 function mutagen-create {
   name=$1
   alpha=$2
@@ -142,7 +144,12 @@ function epoch-ms {
 }
 
 function dcr {
-  docker compose down -v "$1"
-  docker compose up -d "$1"
+  if [ -z "$1" ]; then
+    docker compose down -v
+    docker compose up -d
+  else
+    docker compose down -v "$1"
+    docker compose up -d "$1"
+  fi
 }
 

@@ -2,6 +2,8 @@ if [[ ( "$SHLVL" -eq 1 && ! -o LOGIN ) && -s "${ZDOTDIR:-$HOME}/.zprofile" ]]; t
   source "${ZDOTDIR:-$HOME}/.zprofile"
 fi
 
+set -a
+
 if [[ -f $HOME/.env.private ]]; then
   source $HOME/.env.private
 fi
